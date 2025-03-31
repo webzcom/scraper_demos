@@ -34,49 +34,73 @@ drug_data = []
 
 # Step 3: Visit each drug page and extract detailed info
 for url in unique_links:
-    while counterValue < outputLimit:
-        driver.get(url)
-        time.sleep(3)
+    driver.get(url)
+    time.sleep(3)
 
-        # Basic Info
+    # Basic Info
+    try:
+        drug_name = driver.find_element(By.TAG_NAME, "h1").text.strip()
+    except:
+        drug_name = "N/A"
+
+    def try_get_by_xpath(xpath):
         try:
-            drug_name = driver.find_element(By.TAG_NAME, "h1").text.strip()
+            return driver.find_element(By.XPATH, xpath).text.strip()
         except:
-            drug_name = "N/A"
+            return "N/A"
 
-        def try_get_by_xpath(xpath):
-            try:
-                return driver.find_element(By.XPATH, xpath).text.strip()
-            except:
-                return "N/A"
+    def try_get_by_id(element_id):
+        try:
+            return driver.find_element(By.ID, element_id).text.strip()
+        except:
+            return "N/A"
 
-        def try_get_by_id(element_id):
-            try:
-                return driver.find_element(By.ID, element_id).text.strip()
-            except:
-                return "N/A"
 
-        # Drug details (labels may vary — update as needed)
-        form = try_get_by_xpath("//div[contains(text(), 'Form')]/following-sibling::div")
-        strength = try_get_by_xpath("//div[contains(text(), 'Strength')]/following-sibling::div")
-        frequency = try_get_by_xpath("//div[contains(text(), 'Frequency')]/following-sibling::div")
-        supply = try_get_by_xpath("//div[contains(text(), 'Supply')]/following-sibling::div")
+    def format_price(price):
+        try:
+            price = price.replace("\n", "").replace("$", "")
+            price_int = int(price)
+            price_float = float(price_int / 100)
+            formatted_price = f"{price_float:.2f}"
+            print(formatted_price)
+            return formatted_price        
+        except:
+            return ""
 
-        # Pricing Info
-        no_insurance_price = try_get_by_id("insurance-estimate-median-price")
-        insurance_price = try_get_by_id("extended-supply-price-label")  # spelling from your message
 
-        drug_data.append({
-            "Drug Name": drug_name,
-            "Price URL": url,
-            "Form": form,
-            "Strength": strength,
-            "Frequency": frequency,
-            "Supply": supply,
-            "Average Insurance Price": insurance_price,
-            "Buy Without Insurance": no_insurance_price
-        })
-        counterValue += 1
+    # Drug details (labels may vary — update as needed)
+    #form = try_get_by_xpath("//div[contains(text(), 'Form')]/following-sibling::div")
+    #strength = try_get_by_xpath("//div[contains(text(), 'Strength')]/following-sibling::div")
+    #frequency = try_get_by_xpath("//div[contains(text(), 'Frequency')]/following-sibling::div")
+    #supply = try_get_by_xpath("//div[contains(text(), 'Supply')]/following-sibling::div")
+
+    form = try_get_by_id("form-box-item")
+    strength = try_get_by_id("strength-box-item")
+    frequency = try_get_by_id("frequency-box-item")
+    supply = try_get_by_id("supply-box-item")
+    
+    
+    
+    # Pricing Info
+    no_insurance_price = try_get_by_id("insurance-estimate-median-price")
+    insurance_price = try_get_by_id("extended-supply-price-label")  # spelling from your message
+
+    no_insurance_price_formatted = format_price(no_insurance_price)
+    insurance_price_formatted = format_price(insurance_price)
+
+    print(drug_name)
+
+    drug_data.append({
+        "Drug Name": drug_name,
+        "Price URL": url,
+        "Form": form,
+        "Strength": strength,
+        "Frequency": frequency,
+        "Supply": supply,
+        "Average Insurance Price": insurance_price_formatted,
+        "Buy Without Insurance": no_insurance_price_formatted
+    })
+
 driver.quit()
 
 # Step 4: Export to Excel
