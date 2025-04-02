@@ -16,8 +16,8 @@ driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), opti
 # URL to Amazon Pharmacy search results
 #search_url = "https://www.amazon.com/s?k=high+blood+pressure&i=amazon-pharmacy&ref=sf_highbloodpressure"
 #search_url = "https://www.amazon.com/s?k=high+cholesterol&i=amazon-pharmacy&ref=sf_highcholesterol"
-search_url = "https://www.amazon.com/s?k=depression&i=amazon-pharmacy&ref=sf_depression"
-#search_url = "https://www.amazon.com/s?k=anxiety&i=amazon-pharmacy&ref=sf_anxiety"
+#search_url = "https://www.amazon.com/s?k=depression&i=amazon-pharmacy&ref=sf_depression"
+search_url = "https://www.amazon.com/s?k=anxiety&i=amazon-pharmacy&ref=sf_anxiety"
 #search_url = "https://www.amazon.com/s?k=acid+reflux&i=amazon-pharmacy&ref=sf_acidreflux"
 #search_url = "https://www.amazon.com/s?k=birth+control&i=amazon-pharmacy&ref=sf_birthcontrol"
 #search_url = "https://www.amazon.com/s?k=diabetes&i=amazon-pharmacy&ref=sf_diabetes"
@@ -91,6 +91,7 @@ for link in drug_links[:100]:  # Limit for demonstration
         print(drug_name)
         no_insurance_price_formatted = format_price(no_insurance_price)
         insurance_price_formatted = format_price(insurance_price)
+        link = link.split('?')[0]
 
         drug_data.append({
             "Drug Name": drug_name,
