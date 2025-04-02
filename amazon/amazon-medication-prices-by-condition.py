@@ -1,5 +1,6 @@
 import csv
 import time
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -13,9 +14,9 @@ options.add_argument('--no-sandbox')
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
 # URL to Amazon Pharmacy search results
-search_url = "https://www.amazon.com/s?k=high+blood+pressure&i=amazon-pharmacy&ref=sf_highbloodpressure"
+#search_url = "https://www.amazon.com/s?k=high+blood+pressure&i=amazon-pharmacy&ref=sf_highbloodpressure"
 #search_url = "https://www.amazon.com/s?k=high+cholesterol&i=amazon-pharmacy&ref=sf_highcholesterol"
-#search_url = "https://www.amazon.com/s?k=depression&i=amazon-pharmacy&ref=sf_depression"
+search_url = "https://www.amazon.com/s?k=depression&i=amazon-pharmacy&ref=sf_depression"
 #search_url = "https://www.amazon.com/s?k=anxiety&i=amazon-pharmacy&ref=sf_anxiety"
 #search_url = "https://www.amazon.com/s?k=acid+reflux&i=amazon-pharmacy&ref=sf_acidreflux"
 #search_url = "https://www.amazon.com/s?k=birth+control&i=amazon-pharmacy&ref=sf_birthcontrol"
@@ -85,6 +86,7 @@ for link in drug_links[:100]:  # Limit for demonstration
         # Pricing Info
         no_insurance_price = try_get_by_id("insurance-estimate-median-price")
         insurance_price = try_get_by_id("extended-supply-price-label")  # spelling from your message
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         print(drug_name)
         no_insurance_price_formatted = format_price(no_insurance_price)
@@ -98,13 +100,14 @@ for link in drug_links[:100]:  # Limit for demonstration
             "Frequency": frequency,
             "Supply": supply,
             "Average Insurance Price": insurance_price_formatted,
-            "Buy Without Insurance": no_insurance_price_formatted
+            "Buy Without Insurance": no_insurance_price_formatted,
+            "Time Stamp": timestamp
         })
 
 # Step 3: Save to CSV
 csv_filename = f"amazon_drugs_{category}.csv"
 with open(csv_filename, mode='w', newline='', encoding='utf-8') as file:
-    writer = csv.DictWriter(file, fieldnames=["Drug Name", "Price URL", "Form", "Strength", "Frequency", "Supply", "Average Insurance Price", "Buy Without Insurance"])
+    writer = csv.DictWriter(file, fieldnames=["Drug Name", "Price URL", "Form", "Strength", "Frequency", "Supply", "Average Insurance Price", "Buy Without Insurance", "Time Stamp"])
     writer.writeheader()
     writer.writerows(drug_data)
 
