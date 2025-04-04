@@ -17,9 +17,7 @@ const categoryUrls = [
     'https://www.amazon.com/s?k=hypothyroidism&i=amazon-pharmacy&ref=sf_hypothyroidism',
     'https://www.amazon.com/s?k=allergies&i=amazon-pharmacy&ref=sf_allergies',
     'https://www.amazon.com/s?k=asthma&i=amazon-pharmacy&ref=sf_asthma',
-    'https://www.amazon.com/s?k=hair+loss&i=amazon-pharmacy&ref=sf_hairloss',
-
-
+    'https://www.amazon.com/s?k=hair+loss&i=amazon-pharmacy&ref=sf_hairloss'
     // Add more as needed
   ];
   
