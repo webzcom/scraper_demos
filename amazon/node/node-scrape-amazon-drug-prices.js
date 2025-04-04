@@ -1,4 +1,3 @@
-
 import puppeteer from 'puppeteer';
 import { createObjectCsvWriter } from 'csv-writer';
 import fs from 'fs';
@@ -22,8 +21,8 @@ const categoryUrls = [
   ];
   
 
-const searchUrl = 'https://www.amazon.com/s?k=high+blood+pressure&i=amazon-pharmacy&ref=sf_highbloodpressure';
-const outputFile = 'drug-details.csv';
+// CSV file info
+const outputFile = 'amazon-pharmacy-drugs.csv';
 
 // Delete existing file at start
 if (fs.existsSync(outputFile)) {
@@ -47,6 +46,7 @@ const csvWriter = createObjectCsvWriter({
 });
 
 
+// Retry HTTP connection 3 times before giving up 
 async function safeGoto(page, url, retries = 3) {
     for (let i = 1; i <= retries; i++) {
       try {
@@ -69,25 +69,24 @@ async function safeGoto(page, url, retries = 3) {
   }
   
 
-async function extractDrugDetails(page, url) {
-    try {
-      await page.goto(url, { waitUntil: 'networkidle2' });
+  async function extractDrugDetails(page, url) {
+    const success = await safeGoto(page, url);
+    if (!success) return null;
   
+    try {
       const data = await page.evaluate(() => {
         const get = (id) => {
-            const el = document.querySelector(`#${id}`);
-            if (!el) return null;
-          
-            const first = el.querySelector(':scope > *');
-            return first ? first.textContent.trim() : el.textContent.trim();
-          };
+          const el = document.querySelector(`#${id}`);
+          const first = el?.querySelector(':scope > *');
+          return first ? first.textContent.trim() : el?.textContent.trim() || null;
+        };
   
         const nameEl = document.querySelector('#productTitle') || document.querySelector('h1');
-        const name = nameEl ? nameEl.textContent.trim() : null;
+        const name = nameEl?.textContent.trim() || null;
   
         return {
           name,
-          priceWithoutInsurance: get('extended-supply-price-label'),
+          priceWithoutInsurance: get('retail-estimate-price'),
           priceWithInsurance: get('insurance-estimate-median-price'),
           form: get('form-box-item'),
           strength: get('strength-box-item'),
@@ -97,12 +96,13 @@ async function extractDrugDetails(page, url) {
   
       return { ...data, url };
     } catch (err) {
-      console.error(`❌ Failed to scrape ${url}:`, err.message);
+      console.error(`❌ Failed to extract data from ${url}: ${err.message}`);
       return null;
     }
   }
   
-
+  
+  // Get the list of drug page URLs that need to be scraped before scraping them
   async function getDrugUrls(page, categoryUrl) {
     const allLinks = new Set();
     let pageNumber = 1;
@@ -135,10 +135,9 @@ async function extractDrugDetails(page, url) {
     return [...allLinks];
   }
   
+ 
   
-  
-  
-
+  // Run the application
   async function run() {
     const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
