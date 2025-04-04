@@ -40,7 +40,7 @@ async function extractDrugDetails(page, url) {
   
         return {
           name,
-          priceWithoutInsurance: get('retail-estimate-price'),
+          priceWithoutInsurance: get('extended-supply-price-label'),
           priceWithInsurance: get('insurance-estimate-median-price'),
           form: get('form-box-item'),
           strength: get('strength-box-item'),
