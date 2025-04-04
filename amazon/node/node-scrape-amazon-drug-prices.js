@@ -46,6 +46,11 @@ const csvWriter = createObjectCsvWriter({
 });
 
 
+function delay(ms = 1000) {
+    return new Promise(res => setTimeout(res, ms));
+  }
+  
+
 // Retry HTTP connection 3 times before giving up 
 async function safeGoto(page, url, retries = 3) {
     for (let i = 1; i <= retries; i++) {
@@ -159,6 +164,8 @@ async function safeGoto(page, url, retries = 3) {
         } else {
           console.warn(`⚠️ Skipped: ${url}`);
         }
+        // ✅ Random delay between 1.2 and 2.4 seconds to simulate human behavior
+        await delay(1200 + Math.random() * 1200);
       }
     }
   
