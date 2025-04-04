@@ -46,6 +46,29 @@ const csvWriter = createObjectCsvWriter({
   append: fs.existsSync(outputFile)
 });
 
+
+async function safeGoto(page, url, retries = 3) {
+    for (let i = 1; i <= retries; i++) {
+      try {
+        console.log(`🌐 Navigating to ${url} (attempt ${i})`);
+        await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+        return true; // success
+      } catch (err) {
+        console.warn(`⚠️ Failed to load ${url} on attempt ${i}: ${err.message}`);
+        if (i === retries) {
+          console.error(`❌ Gave up after ${retries} attempts: ${url}`);
+          return false;
+        }
+  
+        // Wait before retrying
+        const wait = 1500 * i;
+        console.log(`⏳ Retrying in ${wait}ms...`);
+        await new Promise(res => setTimeout(res, wait));
+      }
+    }
+  }
+  
+
 async function extractDrugDetails(page, url) {
     try {
       await page.goto(url, { waitUntil: 'networkidle2' });
@@ -81,18 +104,38 @@ async function extractDrugDetails(page, url) {
   
 
   async function getDrugUrls(page, categoryUrl) {
-    console.log(`📄 Visiting category: ${categoryUrl}`);
-    await page.goto(categoryUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+    const allLinks = new Set();
+    let pageNumber = 1;
   
-    const links = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll('a.a-link-normal.s-no-outline'))
-        .map(el => el.href)
-        .filter(href => href.includes('/dp/'))
-        .map(link => link.split('?')[0]);
-    });
+    while (true) {
+      const pageUrl = `${categoryUrl}&page=${pageNumber}`;
+      console.log(`📄 Visiting: ${pageUrl}`);
   
-    return [...new Set(links)];
+      const success = await safeGoto(page, pageUrl);
+      if (!success) break;
+  
+      const links = await page.evaluate(() => {
+        return Array.from(document.querySelectorAll('a.a-link-normal.s-no-outline'))
+          .map(el => el.href)
+          .filter(href => href.includes('/dp/'))
+          .map(link => link.split('?')[0]);
+      });
+  
+      if (links.length === 0) {
+        console.log(`⛔ No results on page ${pageNumber}, stopping.`);
+        break;
+      }
+  
+      links.forEach(link => allLinks.add(link));
+      pageNumber++;
+  
+      await new Promise(res => setTimeout(res, 1000)); // delay between pages
+    }
+  
+    return [...allLinks];
   }
+  
+  
   
   
 
@@ -100,33 +143,32 @@ async function extractDrugDetails(page, url) {
     const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
   
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    );
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36...');
   
     const timestamp = new Date().toISOString();
     const results = [];
   
     for (const categoryUrl of categoryUrls) {
-        const drugUrls = await getDrugUrls(page, categoryUrl);
-      
-        for (const url of drugUrls) {
-          console.log(`🧪 Scraping: ${url}`);
-          const details = await extractDrugDetails(page, url);
-          if (details?.name) {
-            results.push({ ...details, timestamp });
-          } else {
-            console.warn(`⚠️ Skipped: ${url}`);
-          }
+      console.log(`🔍 Starting category: ${categoryUrl}`);
+      const drugUrls = await getDrugUrls(page, categoryUrl);
+  
+      for (const url of drugUrls) {
+        console.log(`🧪 Scraping: ${url}`);
+        const details = await extractDrugDetails(page, url);
+        if (details?.name) {
+          results.push({ ...details, url, timestamp });
+        } else {
+          console.warn(`⚠️ Skipped: ${url}`);
         }
       }
-      
+    }
   
     await csvWriter.writeRecords(results);
-    console.log(`✅ All data saved to CSV.`);
+    console.log(`✅ Saved ${results.length} records to CSV`);
   
     await browser.close();
   }
+  
   
 
 // Placeholder for future DB insert
