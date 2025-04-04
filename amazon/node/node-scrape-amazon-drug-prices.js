@@ -1,10 +1,24 @@
+
 import puppeteer from 'puppeteer';
 import { createObjectCsvWriter } from 'csv-writer';
 import fs from 'fs';
 // import sql from 'mssql'; // Uncomment later for DB connection
 
+const categoryUrls = [
+    'https://www.amazon.com/s?k=high+blood+pressure&i=amazon-pharmacy&ref=sf_highbloodpressure',
+    'https://www.amazon.com/s?k=high+cholesterol&i=amazon-pharmacy&ref=sf_highcholesterol',
+    'https://www.amazon.com/s?k=depression&i=amazon-pharmacy&ref=sf_depression'
+    // Add more as needed
+  ];
+  
+
 const searchUrl = 'https://www.amazon.com/s?k=high+blood+pressure&i=amazon-pharmacy&ref=sf_highbloodpressure';
 const outputFile = 'drug-details.csv';
+
+// Delete existing file at start
+if (fs.existsSync(outputFile)) {
+    fs.unlinkSync(outputFile);
+  }
 
 // CSV Writer Setup
 const csvWriter = createObjectCsvWriter({
@@ -56,52 +70,54 @@ async function extractDrugDetails(page, url) {
   }
   
 
-async function getDrugUrls(page) {
-  await page.goto(searchUrl, { waitUntil: 'networkidle2' });
-
-  // Extract detail page URLs from search results
-  const links = await page.evaluate(() => {
-    return Array.from(document.querySelectorAll('a.a-link-normal.s-no-outline'))
-      .map((el) => el.href)
-      .filter((href) => href.includes('/dp/'));
-  });
-
-  // De-dupe and normalize
-  return [...new Set(links.map(link => link.split('?')[0]))];
-}
-
-async function run() {
-  const browser = await puppeteer.launch({ headless: true });
-  const page = await browser.newPage();
-
-  await page.setUserAgent(
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-  );
-
-  const drugUrls = await getDrugUrls(page);
-  console.log(`🔎 Found ${drugUrls.length} drug detail URLs`);
-
-  const timestamp = new Date().toISOString();
-  const results = [];
-
-  for (const url of drugUrls) {
-    console.log(`📄 Scraping ${url}`);
-    const details = await extractDrugDetails(page, url);
-    if (details && details.name) {
-      results.push({ ...details, timestamp });
+  async function getDrugUrls(page, categoryUrl) {
+    console.log(`📄 Visiting category: ${categoryUrl}`);
+    await page.goto(categoryUrl, { waitUntil: 'networkidle2', timeout: 30000 });
   
-      // await insertToDatabase({ ...details, timestamp });
-    } else {
-      console.warn(`⚠️ Skipped ${url} — no name found.`);
-    }
+    const links = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('a.a-link-normal.s-no-outline'))
+        .map(el => el.href)
+        .filter(href => href.includes('/dp/'))
+        .map(link => link.split('?')[0]);
+    });
+  
+    return [...new Set(links)];
   }
   
+  
 
-  await csvWriter.writeRecords(results);
-  console.log(`✅ Scraped data saved to ${outputFile}`);
-
-  await browser.close();
-}
+  async function run() {
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+  
+    await page.setUserAgent(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    );
+  
+    const timestamp = new Date().toISOString();
+    const results = [];
+  
+    for (const categoryUrl of categoryUrls) {
+        const drugUrls = await getDrugUrls(page, categoryUrl);
+      
+        for (const url of drugUrls) {
+          console.log(`🧪 Scraping: ${url}`);
+          const details = await extractDrugDetails(page, url);
+          if (details?.name) {
+            results.push({ ...details, timestamp });
+          } else {
+            console.warn(`⚠️ Skipped: ${url}`);
+          }
+        }
+      }
+      
+  
+    await csvWriter.writeRecords(results);
+    console.log(`✅ All data saved to CSV.`);
+  
+    await browser.close();
+  }
+  
 
 // Placeholder for future DB insert
 // async function insertToDatabase(details) {
