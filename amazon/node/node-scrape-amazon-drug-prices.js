@@ -4,10 +4,22 @@ import { createObjectCsvWriter } from 'csv-writer';
 import fs from 'fs';
 // import sql from 'mssql'; // Uncomment later for DB connection
 
+
+// Amazon Drug Category Pages
 const categoryUrls = [
     'https://www.amazon.com/s?k=high+blood+pressure&i=amazon-pharmacy&ref=sf_highbloodpressure',
     'https://www.amazon.com/s?k=high+cholesterol&i=amazon-pharmacy&ref=sf_highcholesterol',
-    'https://www.amazon.com/s?k=depression&i=amazon-pharmacy&ref=sf_depression'
+    'https://www.amazon.com/s?k=depression&i=amazon-pharmacy&ref=sf_depression',
+    'https://www.amazon.com/s?k=anxiety&i=amazon-pharmacy&ref=sf_anxiety',
+    'https://www.amazon.com/s?k=acid+reflux&i=amazon-pharmacy&ref=sf_acidreflux',
+    'https://www.amazon.com/s?k=birth+control&i=amazon-pharmacy&ref=sf_birthcontrol',
+    'https://www.amazon.com/s?k=diabetes&i=amazon-pharmacy&ref=sf_diabetes',
+    'https://www.amazon.com/s?k=hypothyroidism&i=amazon-pharmacy&ref=sf_hypothyroidism',
+    'https://www.amazon.com/s?k=allergies&i=amazon-pharmacy&ref=sf_allergies',
+    'https://www.amazon.com/s?k=asthma&i=amazon-pharmacy&ref=sf_asthma',
+    'https://www.amazon.com/s?k=hair+loss&i=amazon-pharmacy&ref=sf_hairloss',
+
+
     // Add more as needed
   ];
   
